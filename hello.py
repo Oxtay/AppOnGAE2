@@ -1,5 +1,6 @@
 import webapp2
 import validdate
+import htmlhandle
 
 form  = """
 <form method="post">
@@ -26,10 +27,10 @@ form  = """
 
 class MainPage(webapp2.RequestHandler):
     def write_form(self, error="", month="", day="", year=""):
-        self.response.write(form % {"error": error,
-                                    "month": month,
-                                    "day": day,
-                                    "year": year})
+        self.response.out.write(form % {"error": error,
+                                    "month": htmlhandle.escape_html(month),
+                                    "day": htmlhandle.escape_html(day),
+                                    "year": htmlhandle.escape_html(year)})
         
     def get(self):
         self.write_form()
@@ -47,7 +48,11 @@ class MainPage(webapp2.RequestHandler):
             self.write_form("That doesn't seem right",
                             user_month, user_day, user_year)
         else:
-            self.response.write("Thank you! That's a valid responce.")
+            self.redirect("/thanks")
+            
+class ThanksHandler(webapp2.RequestHandler):
+    def get(self):
+        self.response.out.write("Thank you! That's a valid responce.")
 
 application = webapp2.WSGIApplication([
-    ('/', MainPage)], debug=True)
+    ('/', MainPage), ('/thanks', ThanksHandler)], debug=True)
