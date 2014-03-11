@@ -1,6 +1,5 @@
 import webapp2
-import validdate
-import htmlhandle
+import validdate, htmlhandle, rot13
 
 form  = """
 <form method="post">
@@ -22,6 +21,16 @@ form  = """
     <br>
     <br>
 	<input type="submit">
+</form>
+"""
+
+form2  = """
+<h2>Enter some text to ROT13:</h2>
+<form method="post">
+      <textarea name="text"
+                style="height: 100px; width: 400px;">%(text)s</textarea>
+      <br>
+      <input type="submit">
 </form>
 """
 
@@ -54,5 +63,17 @@ class ThanksHandler(webapp2.RequestHandler):
     def get(self):
         self.response.out.write("Thank you! That's a valid responce.")
 
+class Rot13(webapp2.RequestHandler):
+    def write_form(self, text=""):
+        self.response.out.write(form2 % {"text": htmlhandle.escape_html(text)})
+        
+    def get(self):
+        self.write_form()
+        
+    def post(self):
+        user_text = self.request.get("text")
+        text = rot13.rot13ify(user_text)
+        self.write_form(text)
+
 application = webapp2.WSGIApplication([
-    ('/', MainPage), ('/thanks', ThanksHandler)], debug=True)
+    ('/', MainPage), ('/thanks', ThanksHandler), ('/rot13', Rot13)], debug=True)
