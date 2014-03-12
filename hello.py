@@ -1,7 +1,17 @@
 import webapp2
-import validdate, htmlhandle, rot13
+import validdate, htmlhandle, rot13, validsign
 
-form  = """
+form_main = """
+<form method="post">
+	<select name="section">
+		<option value="birth">Enter Birthday</option>
+		<option value="rot13">Convert to ROT13</option>
+		<option value="signup">Signup Form</option>
+	<br>
+	<input type="submit">
+</form>
+"""
+form_birthday  = """
 <form method="post">
     What is your birthday
     <br>
@@ -24,7 +34,7 @@ form  = """
 </form>
 """
 
-form2  = """
+form_rot13  = """
 <h2>Enter some text to ROT13:</h2>
 <form method="post">
       <textarea name="text"
@@ -34,9 +44,85 @@ form2  = """
 </form>
 """
 
+form_singup = """
+<h2>Signup</h2>
+    <form method="post">
+      <table>
+        <tr>
+          <td class="label">
+            Username
+          </td>
+          <td>
+            <input type="text" name="username" value="%(username)s">
+          </td>
+          <td class="error">
+            %(user_err)s
+          </td>
+        </tr>
+
+        <tr>
+          <td class="label">
+            Password
+          </td>
+          <td>
+            <input type="password" name="password" value="%(password)s">
+          </td>
+          <td class="error">
+            %(pass_err)s
+          </td>
+        </tr>
+
+        <tr>
+          <td class="label">
+            Verify Password
+          </td>
+          <td>
+            <input type="password" name="verify" value="%(verify)s">
+          </td>
+          <td class="error">
+            %(verify_err)s
+          </td>
+        </tr>
+
+        <tr>
+          <td class="label">
+            Email (optional)
+          </td>
+          <td>
+            <input type="text" name="email" value="%(email)s">
+          </td>
+          <td class="error">
+            %(email_err)s
+          </td>
+        </tr>
+      </table>
+
+      <input type="submit">
+    </form>
+"""
+
 class MainPage(webapp2.RequestHandler):
+    def write_form(self):
+        self.response.out.write(form_main)
+    
+    def get(self):
+        self.write_form()
+        
+    def post(self):
+        section = self.request.get("section")
+        
+        if section == "birth":
+            self.redirect("/birth")
+        
+        elif section == "rot13":
+            self.redirect("/rot13")
+        
+        elif section == "signup":
+            self.redirect("/signup")
+                
+class EnterBirthday(webapp2.RequestHandler):
     def write_form(self, error="", month="", day="", year=""):
-        self.response.out.write(form % {"error": error,
+        self.response.out.write(form_birthday % {"error": error,
                                     "month": htmlhandle.escape_html(month),
                                     "day": htmlhandle.escape_html(day),
                                     "year": htmlhandle.escape_html(year)})
@@ -65,7 +151,7 @@ class ThanksHandler(webapp2.RequestHandler):
 
 class Rot13(webapp2.RequestHandler):
     def write_form(self, text=""):
-        self.response.out.write(form2 % {"text": htmlhandle.escape_html(text)})
+        self.response.out.write(form_rot13 % {"text": htmlhandle.escape_html(text)})
         
     def get(self):
         self.write_form()
@@ -74,6 +160,23 @@ class Rot13(webapp2.RequestHandler):
         user_text = self.request.get("text")
         text = rot13.rot13ify(user_text)
         self.write_form(text)
+        
+class signup(webapp2.RequestHandler):
+    def write_form(self, username="", password="", 
+                    verify="", email="", 
+                    user_err="", pass_err="", 
+                    verify_err="", email_err=""):
+        self.response.out.write(form_signup % {"username":username,
+                                        "password":password,
+                                        "verify":verify,
+                                        "email":email})
+        
+    def post(self):
+        user_name = validsign.valid_username(username)
+        pass_word = validsign.valid_password(password)
+        e_mail = validsign.valid_email(email)
+        
+        self.response.out.write()
 
 application = webapp2.WSGIApplication([
-    ('/', MainPage), ('/thanks', ThanksHandler), ('/rot13', Rot13)], debug=True)
+    ('/', MainPage), ('/birth', EnterBirthday), ('/thanks', ThanksHandler), ('/rot13', Rot13)], debug=True)

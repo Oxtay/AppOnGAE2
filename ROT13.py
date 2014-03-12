@@ -1,30 +1,12 @@
-import webapp2
-import validdate
-import htmlhandle
-
-form  = """
-<h2>Enter some text to ROT13:</h2>
-<form method="post">
-      <textarea name="text"
-                style="height: 100px; width: 400px;">%(text)s</textarea>
-      <br>
-      <input type="submit">
-</form>
-"""
-
-class Rot13(webapp2.RequestHandler):
-    def write_form(self, error="", text=""):
-        self.response.out.write(form % {"error": error,
-                                    "month": htmlhandle.escape_html(text)})
-        
-    def get(self):
-        self.write_form()
-        
-    def post(self):
-        user_month = self.request.get("month")
-        
-        month = validdate.valid_month(user_month)
-        self.redirect("/rot13")
+def rot13ify(s):
+    output = ""
+    for c in s:
+        if ord(c)>=65 and ord(c)<=90:
+            output = output + chr((ord(c)-65+13)%26 + 65)
+        elif ord(c)>=97 and ord(c)<=122:
+            output = output + chr((ord(c)-97+13)%26 + 97)
+        else:
+            output = output + chr(ord(c))
+    return output
             
-
-application = webapp2.WSGIApplication([('/rot13', Rot13)], debug=True)
+print rot13ify("AAA")
