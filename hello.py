@@ -1,6 +1,12 @@
 import webapp2
 import validdate, htmlhandle, rot13, validsign
 
+THANKS      = "Thank you! That's a valid response."
+USER_ERR    = "That's not a valid username."
+PASS_ERR    = "That wasn't a valid password."
+VERIFY_ERR  = "Your passwords didn't match."
+EMAIL_ERR   = "That's not a valid email."
+
 form_main = """
 <form method="post">
 	<select name="section">
@@ -45,7 +51,17 @@ form_rot13  = """
 """
 
 form_signup = """
-<h2>Signup</h2>
+<html>
+    <head>
+    <title>Sign Up</title>
+    <style type="text/css">
+      .label {text-align: right}
+      .error {color: red}
+    </style>
+    </head>
+   
+   <body> 
+    <h2>Signup</h2>
     <form method="post">
       <table>
         <tr>
@@ -99,6 +115,9 @@ form_signup = """
 
       <input type="submit">
     </form>
+    </body>
+    
+</html>
 """
 
 class MainPage(webapp2.RequestHandler):
@@ -132,12 +151,12 @@ class EnterBirthday(webapp2.RequestHandler):
         
     def post(self):
         user_month = self.request.get("month")
-        user_day = self.request.get("day")
-        user_year = self.request.get("year")
+        user_day   = self.request.get("day")
+        user_year  = self.request.get("year")
         
-        month = validdate.valid_month(user_month)
-        day = validdate.valid_day(user_day)
-        year = validdate.valid_year(user_year)
+        month   = validdate.valid_month(user_month)
+        day     = validdate.valid_day(user_day)
+        year    = validdate.valid_year(user_year)
         
         if not (month and day and year):
             self.write_form("That doesn't seem right",
@@ -147,7 +166,7 @@ class EnterBirthday(webapp2.RequestHandler):
             
 class ThanksHandler(webapp2.RequestHandler):
     def get(self):
-        self.response.out.write("Thank you! That's a valid response.")
+        self.response.out.write(THANKS)
 
 class Rot13(webapp2.RequestHandler):
     def write_form(self, text=""):
@@ -179,28 +198,38 @@ class signup(webapp2.RequestHandler):
         self.write_form()
         
     def post(self):
-        user_name = validsign.valid_username(username)
-        pass_word = validsign.valid_password(password)
-        e_mail = validsign.valid_email(email)
-        
-        if not user_name:
-            self.write_form("That's not a valid username.")
+        username = self.request.get("username")
+        password = self.request.get("password")
+        verify   = self.request.get("verify")
+        email    = self.request.get("email")
+                
+        if not validsign.isValidUser(username):
+            self.write_form(username, 
+            "", "", email, 
+            USER_ERR, "", "", "")
             
-        if not pass_word:
-            self.write_form("That wasn't a valid password.")
+        elif not validsign.isValidPass(password):
+            self.write_form(username, 
+            "", "", email, "", 
+            PASS_ERR, "", "")
         
-        if not e_mail:
-            self.write_form("That's not a valid email.")
+        elif not validsign.isValidEmail(email):
+            self.write_form(username, 
+            "", "", email, "", "", "",
+            EMAIL_ERR)
             
-        if password != verify:
-            self.write_form("Your passwords didn't match.")
+        elif password != verify:
+            self.write_form(username, 
+            "", "", email, "", "", 
+            VERIFY_ERR, "")
             
         else:
-            self.redirect("/signupthanks")
+            #self.response.out.write("Welcome, %s" % username)
+            self.redirect("/welcome?username=" + username)
 
-class SignupThanks(webapp2.RequestHandler):
+class Welcome(webapp2.RequestHandler):
     def get(self):
-        self.response.out.write("Welcome, %(username)s" % user_name)
+        self.response.write("Welcome, " + self.request.get('username') + '!')
 
 application = webapp2.WSGIApplication([
-    ('/', MainPage), ('/birth', EnterBirthday), ('/thanks', ThanksHandler), ('/rot13', Rot13), ('/signup', signup), ('/signupthanks', SignupThanks)], debug=True)
+    ('/', MainPage), ('/birth', EnterBirthday), ('/thanks', ThanksHandler), ('/rot13', Rot13), ('/signup', signup), ('/welcome', Welcome)], debug=True)
