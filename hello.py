@@ -44,7 +44,7 @@ form_rot13  = """
 </form>
 """
 
-form_singup = """
+form_signup = """
 <h2>Signup</h2>
     <form method="post">
       <table>
@@ -147,7 +147,7 @@ class EnterBirthday(webapp2.RequestHandler):
             
 class ThanksHandler(webapp2.RequestHandler):
     def get(self):
-        self.response.out.write("Thank you! That's a valid responce.")
+        self.response.out.write("Thank you! That's a valid response.")
 
 class Rot13(webapp2.RequestHandler):
     def write_form(self, text=""):
@@ -167,16 +167,40 @@ class signup(webapp2.RequestHandler):
                     user_err="", pass_err="", 
                     verify_err="", email_err=""):
         self.response.out.write(form_signup % {"username":username,
-                                        "password":password,
-                                        "verify":verify,
-                                        "email":email})
+                                    "password":password,
+                                    "verify":verify,
+                                    "email":email,
+                                    "user_err":user_err,
+                                    "pass_err":pass_err,
+                                    "verify_err":verify_err,
+                                    "email_err":email_err})
+                                        
+    def get(self):
+        self.write_form()
         
     def post(self):
         user_name = validsign.valid_username(username)
         pass_word = validsign.valid_password(password)
         e_mail = validsign.valid_email(email)
         
-        self.response.out.write()
+        if not user_name:
+            self.write_form("That's not a valid username.")
+            
+        if not pass_word:
+            self.write_form("That wasn't a valid password.")
+        
+        if not e_mail:
+            self.write_form("That's not a valid email.")
+            
+        if password != verify:
+            self.write_form("Your passwords didn't match.")
+            
+        else:
+            self.redirect("/signupthanks")
+
+class SignupThanks(webapp2.RequestHandler):
+    def get(self):
+        self.response.out.write("Welcome, %(username)s" % user_name)
 
 application = webapp2.WSGIApplication([
-    ('/', MainPage), ('/birth', EnterBirthday), ('/thanks', ThanksHandler), ('/rot13', Rot13)], debug=True)
+    ('/', MainPage), ('/birth', EnterBirthday), ('/thanks', ThanksHandler), ('/rot13', Rot13), ('/signup', signup), ('/signupthanks', SignupThanks)], debug=True)
