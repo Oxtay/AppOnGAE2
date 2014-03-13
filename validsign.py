@@ -11,7 +11,7 @@ def isValidPass(password):
     return PASSWORD_RE.match(password)
 
 def isValidEmail(email):
-    return EMAIL_RE.match(email)
+    return not email or EMAIL_RE.match(email)
     
 # print isValidUser("Okh tay") -> None
 # print isValidPass("pa ss") -> <_sre.SRE_Match object at ...>

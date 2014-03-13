@@ -1,5 +1,7 @@
 import webapp2
+import os
 import validdate, htmlhandle, rot13, validsign
+import jinja2
 
 THANKS      = "Thank you! That's a valid response."
 USER_ERR    = "That's not a valid username."
@@ -7,125 +9,24 @@ PASS_ERR    = "That wasn't a valid password."
 VERIFY_ERR  = "Your passwords didn't match."
 EMAIL_ERR   = "That's not a valid email."
 
-form_main = """
-<form method="post">
-	<select name="section">
-		<option value="birth">Enter Birthday</option>
-		<option value="rot13">Convert to ROT13</option>
-		<option value="signup">Signup Form</option>
-	<br>
-	<input type="submit">
-</form>
-"""
-form_birthday  = """
-<form method="post">
-    What is your birthday
-    <br>
-    <label>
-        Month 
-        <input type="text" name="month" value="%(month)s">
-    </label>
-    <label>
-        Day 
-        <input type="text" name="day" value="%(day)s">
-    </label>
-    <label>
-        Year 
-        <input type="text" name="year" value="%(year)s">
-    </label>
-    <div style="color: red">%(error)s</div>
-    <br>
-    <br>
-	<input type="submit">
-</form>
-"""
+template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir), autoescape = True)
 
-form_rot13  = """
-<h2>Enter some text to ROT13:</h2>
-<form method="post">
-      <textarea name="text"
-                style="height: 100px; width: 400px;">%(text)s</textarea>
-      <br>
-      <input type="submit">
-</form>
-"""
-
-form_signup = """
-<html>
-    <head>
-    <title>Sign Up</title>
-    <style type="text/css">
-      .label {text-align: right}
-      .error {color: red}
-    </style>
-    </head>
-   
-   <body> 
-    <h2>Signup</h2>
-    <form method="post">
-      <table>
-        <tr>
-          <td class="label">
-            Username
-          </td>
-          <td>
-            <input type="text" name="username" value="%(username)s">
-          </td>
-          <td class="error">
-            %(user_err)s
-          </td>
-        </tr>
-
-        <tr>
-          <td class="label">
-            Password
-          </td>
-          <td>
-            <input type="password" name="password" value="%(password)s">
-          </td>
-          <td class="error">
-            %(pass_err)s
-          </td>
-        </tr>
-
-        <tr>
-          <td class="label">
-            Verify Password
-          </td>
-          <td>
-            <input type="password" name="verify" value="%(verify)s">
-          </td>
-          <td class="error">
-            %(verify_err)s
-          </td>
-        </tr>
-
-        <tr>
-          <td class="label">
-            Email (optional)
-          </td>
-          <td>
-            <input type="text" name="email" value="%(email)s">
-          </td>
-          <td class="error">
-            %(email_err)s
-          </td>
-        </tr>
-      </table>
-
-      <input type="submit">
-    </form>
-    </body>
+def render_str(template, **params):
+    t = jinja_env.get_template(template)
+    return t.render(params)
     
-</html>
-"""
-
-class MainPage(webapp2.RequestHandler):
-    def write_form(self):
-        self.response.out.write(form_main)
+class BaseHandler(webapp2.RequestHandler):
+    def render(self, template, **kw):
+        self.response.out.write(render_str(template, **kw))
     
+    def write(self, *a, **kw):
+        self.response.out.write(*a, **kw)
+    
+
+class MainPage(BaseHandler):
     def get(self):
-        self.write_form()
+        self.render('form_main.html')
         
     def post(self):
         section = self.request.get("section")
@@ -139,15 +40,9 @@ class MainPage(webapp2.RequestHandler):
         elif section == "signup":
             self.redirect("/signup")
                 
-class EnterBirthday(webapp2.RequestHandler):
-    def write_form(self, error="", month="", day="", year=""):
-        self.response.out.write(form_birthday % {"error": error,
-                                    "month": htmlhandle.escape_html(month),
-                                    "day": htmlhandle.escape_html(day),
-                                    "year": htmlhandle.escape_html(year)})
-        
+class EnterBirthday(BaseHandler):
     def get(self):
-        self.write_form()
+        self.render('form_birthday.html')
         
     def post(self):
         user_month = self.request.get("month")
@@ -159,8 +54,11 @@ class EnterBirthday(webapp2.RequestHandler):
         year    = validdate.valid_year(user_year)
         
         if not (month and day and year):
-            self.write_form("That doesn't seem right",
-                            user_month, user_day, user_year)
+            params = dict(month = user_month, 
+                            day = user_day, 
+                            year = user_year)
+            params['error'] = "That doesn't seem right"
+            self.render('form_birthday.html', **params)
         else:
             self.redirect("/thanks")
             
@@ -168,68 +66,58 @@ class ThanksHandler(webapp2.RequestHandler):
     def get(self):
         self.response.out.write(THANKS)
 
-class Rot13(webapp2.RequestHandler):
-    def write_form(self, text=""):
-        self.response.out.write(form_rot13 % {"text": htmlhandle.escape_html(text)})
-        
+class Rot13(BaseHandler):       
     def get(self):
-        self.write_form()
+        self.render('form_rot13.html')
         
     def post(self):
-        user_text = self.request.get("text")
+        user_text = self.request.get('text')
         text = rot13.rot13ify(user_text)
-        self.write_form(text)
+        self.render('form_rot13.html', text=text)
         
-class signup(webapp2.RequestHandler):
-    def write_form(self, username="", password="", 
-                    verify="", email="", 
-                    user_err="", pass_err="", 
-                    verify_err="", email_err=""):
-        self.response.out.write(form_signup % {"username":username,
-                                    "password":password,
-                                    "verify":verify,
-                                    "email":email,
-                                    "user_err":user_err,
-                                    "pass_err":pass_err,
-                                    "verify_err":verify_err,
-                                    "email_err":email_err})
-                                        
+class signup(BaseHandler):
     def get(self):
-        self.write_form()
+        self.render('form_signup.html')
         
     def post(self):
         username = self.request.get("username")
         password = self.request.get("password")
         verify   = self.request.get("verify")
         email    = self.request.get("email")
+        
+        have_error = False
+        params = dict(username = username, email = email)
                 
         if not validsign.isValidUser(username):
-            self.write_form(username, 
-            "", "", email, 
-            USER_ERR, "", "", "")
+            params['user_err'] = USER_ERR
+            have_error = True
             
-        elif not validsign.isValidPass(password):
-            self.write_form(username, 
-            "", "", email, "", 
-            PASS_ERR, "", "")
+        if not validsign.isValidPass(password):
+            params['pass_err'] = PASS_ERR
+            have_error = True
         
-        elif not validsign.isValidEmail(email):
-            self.write_form(username, 
-            "", "", email, "", "", "",
-            EMAIL_ERR)
+        if not validsign.isValidEmail(email):
+            params['email_err'] = EMAIL_ERR
+            have_error = True
             
-        elif password != verify:
-            self.write_form(username, 
-            "", "", email, "", "", 
-            VERIFY_ERR, "")
+        if password != verify:
+            params['verify_err'] = VERIFY_ERR
+            have_error = True
+            
+        if have_error:
+            self.render('form_signup.html', **params)
             
         else:
             #self.response.out.write("Welcome, %s" % username)
             self.redirect("/welcome?username=" + username)
 
-class Welcome(webapp2.RequestHandler):
+class Welcome(BaseHandler):
     def get(self):
-        self.response.write("Welcome, " + self.request.get('username') + '!')
+        username = self.request.get('username')
+        if validsign.isValidUser(username):
+            self.response.write("Welcome, " + username + '!')
+        else:
+            self.redirect('/signup')
 
 application = webapp2.WSGIApplication([
     ('/', MainPage), ('/birth', EnterBirthday), ('/thanks', ThanksHandler), ('/rot13', Rot13), ('/signup', signup), ('/welcome', Welcome)], debug=True)
