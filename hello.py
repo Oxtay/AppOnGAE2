@@ -120,4 +120,9 @@ class Welcome(BaseHandler):
             self.redirect('/signup')
 
 application = webapp2.WSGIApplication([
-    ('/', MainPage), ('/birth', EnterBirthday), ('/thanks', ThanksHandler), ('/rot13', Rot13), ('/signup', signup), ('/welcome', Welcome)], debug=True)
+                                ('/', MainPage), 
+                                ('/birth', EnterBirthday), 
+                                ('/thanks', ThanksHandler), 
+                                ('/rot13', Rot13), 
+                                ('/signup', signup), 
+                                ('/welcome', Welcome)], debug=True)
