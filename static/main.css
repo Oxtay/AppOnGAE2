@@ -1,10 +1,10 @@
 .wrapper {
     position:absolute;
     top: 30%;
-	left: 45%;
+	left: 25%;
 	margin-top: -20px;
 	margin-left: -10px;
-	
+}	
 .myButton {
 	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #ededed), color-stop(1, #dfdfdf));
 	background:-moz-linear-gradient(top, #ededed 5%, #dfdfdf 100%);
